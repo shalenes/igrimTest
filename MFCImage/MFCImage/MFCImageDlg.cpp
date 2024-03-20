@@ -8,7 +8,8 @@
 #include "MFCImageDlg.h"
 #include "afxdialogex.h"
 #include <iostream>
-
+#include <vector>
+using std::vector;
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -69,8 +70,6 @@ BEGIN_MESSAGE_MAP(CMFCImageDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDC_BTN_IMAGE, &CMFCImageDlg::OnBnClickedBtnImage)
-	ON_BN_CLICKED(IDC_BTN_SAVE, &CMFCImageDlg::OnBnClickedBtnSave)
-	ON_BN_CLICKED(IDC_BTN_LOAD, &CMFCImageDlg::OnBnClickedBtnLoad)
 	ON_BN_CLICKED(IDC_BTN_ACTiON, &CMFCImageDlg::OnBnClickedBtnAction)
 END_MESSAGE_MAP()
 
@@ -163,6 +162,14 @@ HCURSOR CMFCImageDlg::OnQueryDragIcon()
 
 void CMFCImageDlg::OnBnClickedBtnImage()
 {
+	GetDlgItem(IDC_BTN_ACTiON)->EnableWindow(TRUE);
+	centerX.RemoveAll();
+	centerY.RemoveAll();
+
+	if (m_image != NULL)
+	{
+		m_image.Destroy();
+	}
 	int nWidth = 1200;
 	int nHeight = 800;
 	int nBpp = 8;
@@ -179,20 +186,20 @@ void CMFCImageDlg::OnBnClickedBtnImage()
 	UpdateDisplay();
 }
 
-CString g_strFileImage = _T("c:\\image\\save.bmp");
-void CMFCImageDlg::OnBnClickedBtnSave()
-{
-	m_image.Save(g_strFileImage);
-}
-
-void CMFCImageDlg::OnBnClickedBtnLoad()
-{
-	if (m_image != NULL) {
-		m_image.Destroy();
-	}
-	m_image.Load(g_strFileImage);
-	UpdateDisplay();
-}
+//CString g_strFileImage = _T("c:\\image\\save.bmp");
+//void CMFCImageDlg::OnBnClickedBtnSave()
+//{
+//	m_image.Save(g_strFileImage);
+//}
+//
+//void CMFCImageDlg::OnBnClickedBtnLoad()
+//{
+//	if (m_image != NULL) {
+//		m_image.Destroy();
+//	}
+//	m_image.Load(g_strFileImage);
+//	UpdateDisplay();
+//}
 
 void CMFCImageDlg::UpdateDisplay()
 {
@@ -202,28 +209,28 @@ void CMFCImageDlg::UpdateDisplay()
 
 void CMFCImageDlg::moveRect(int nSttX, int nSttY, int nRadius)
 {
-	int nGray = 80;
+	int nGray = 0x81;
 	int nWidth = m_image.GetWidth();
 	int nHeight = m_image.GetHeight();
-	int nPitch = m_image.GetPitch();
+
 	unsigned char* fm = (unsigned char*)m_image.GetBits();
 	memset(fm, 0xff, nWidth * nHeight);
 	drawCircle(fm, nSttX, nSttY, nRadius, nGray);
 	UpdateDisplay();
 	saveFile(nSttX);
+	checkCenter();
 }
 
-void CMFCImageDlg::saveFile(int nSttX)
+void CMFCImageDlg::saveFile(int nSttX) //저장
 {
 	strFile.Format(_T("C:\\image\\image%d.jpg"), nSttX);
 	m_image.Save(strFile);
-
 }
 
-void CMFCImageDlg::showFile(int num, int nSttX, int nSttY) {
+void CMFCImageDlg::showFile(int num)
+{
 
 	strFile.Format(_T("C:\\image\\image%d.jpg"), num);
-	int yPos = num - nSttX + nSttY;
 	if (m_image != NULL)
 	{
 		m_image.Destroy();
@@ -231,9 +238,36 @@ void CMFCImageDlg::showFile(int num, int nSttX, int nSttY) {
 	m_image.Load(strFile);
 	UpdateDisplay();
 
-	std::cout << "X좌표 : " << num << " Y좌표 : " << yPos << std::endl;
+	std::cout << "X좌표 : "<<centerX[num - GetDlgItemInt(IDC_EDIT_XPOS)] << std::endl;
+	std::cout << "Y좌표 : "<<centerY[num - GetDlgItemInt(IDC_EDIT_XPOS)] << std::endl;
 }
 
+void CMFCImageDlg::checkCenter() {
+	int nGray = 0x82;
+	int nWidth = m_image.GetWidth();
+	int nHeight = m_image.GetHeight();
+	int nPitch = m_image.GetPitch();
+	unsigned char* fm = (unsigned char*)m_image.GetBits();
+	CRect rect(0, 0, nWidth, nHeight);
+	int nSumX = 0;
+	int nSumY = 0;
+	int nCount = 0;
+
+	for (int j = rect.top; j < rect.bottom; j++) {
+		for (int i = rect.left; i < rect.right; i++) {
+			if (fm[j * nPitch + i] < nGray) {
+				nSumX += i;
+				nSumY += j;
+				nCount++;
+			}
+		}
+	}
+	double dCenterX = (double)nSumX / nCount;
+	double dCenterY = (double)nSumY / nCount;
+	centerX.Add(dCenterX);
+	centerY.Add(dCenterY);
+	//std::cout << "X좌표 : " << dCenterX << " Y좌표 : " << dCenterY << std::endl;
+}
 
 void CMFCImageDlg::OnBnClickedBtnAction()
 {
@@ -242,6 +276,7 @@ void CMFCImageDlg::OnBnClickedBtnAction()
 	int nSttY = GetDlgItemInt(IDC_EDIT_YPOS);
 	int nRadius = GetDlgItemInt(IDC_EDIT_RADIUS); 
 
+
 	if (!m_image) {
 		MessageBox(_T("도화지먼저 만들어주세요")); //m_image 생성전에 누를 때 방지
 	}
@@ -249,18 +284,30 @@ void CMFCImageDlg::OnBnClickedBtnAction()
 	{
 		MessageBox(_T("모두 숫자로 입력해주세요"));
 	}
+	else if (nSttX + nRadius + move >= m_image.GetWidth() || nSttY + nRadius + move >= m_image.GetHeight()) {
+		MessageBox(_T("수치가 크면 원이 안보일 수 있습니다. 다시 입력해주세요."));
+		GetDlgItem(IDC_EDIT_MOVE)->SetWindowText(_T("")); //SetDlgItemTextW 는 어떻게..?
+		GetDlgItem(IDC_EDIT_XPOS)->SetWindowText(_T(""));
+		GetDlgItem(IDC_EDIT_YPOS)->SetWindowText(_T(""));
+		GetDlgItem(IDC_EDIT_RADIUS)->SetWindowText(_T(""));
+	}
 	else 
 	{
+		GetDlgItem(IDC_BTN_ACTiON)->EnableWindow(false);
 		srand((unsigned int)time(NULL));
-		int num = (rand() % move) + nSttX;
+		int num = (rand() % move) + 1 + nSttX;
+
 		for (int i = 0; i < move; i++) 
 		{
 			moveRect(++nSttX, ++nSttY, nRadius);
-			Sleep(10);
-			if (i == move - 1) { //마지막 루프에 저장한 파일 출력하기 위함
-				showFile(num, nSttX, nSttY);
-			}
+			//Sleep(10);
 		}
+		MessageBox(_T("행동이 끝났습니다. 도화지를 다시 그려주세요."));
+		//for (int i = 0; i < centerX.GetCount(); i++) {
+		//	std::cout << centerX[i] << std::endl;
+		//	std::cout << centerY[i] << std::endl;
+		//}
+		showFile(num);
 	}
 }
 
@@ -274,13 +321,17 @@ BOOL CMFCImageDlg::validImgPos(int x, int y)
 
 void CMFCImageDlg::drawCircle(unsigned char* fm, int x, int y, int nRadius, int nGray)
 {
-	int nCenterX = x + nRadius;
+	int nCenterX = x + nRadius; //센터좌표가 입력한 것에서 반지름을 더한 것이 됨
 	int nCenterY = y + nRadius;
 	int nPitch = m_image.GetPitch();
+
 	for (int j = y; j < y + nRadius * 2; j++) {
 		for (int i = x; i < x + nRadius * 2; i++) {
-			if (isInCircle(i, j, nCenterX, nCenterY, nRadius))
-				fm[j * nPitch + i] = nGray;
+			if (isInCircle(i, j, nCenterX, nCenterY, nRadius)) {
+				if (validImgPos(i, j)) {
+					fm[j * nPitch + i] = nGray;
+				}
+			}
 		}
 	}
 }

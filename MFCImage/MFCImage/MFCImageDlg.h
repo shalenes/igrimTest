@@ -12,6 +12,8 @@ private :
 	CImage m_image;
 	BOOL validImgPos(int x, int y);
 	CString strFile;
+	CArray<double, double> centerX;
+	CArray<double, double> centerY;
 
 
 // 생성입니다.
@@ -39,13 +41,14 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg void OnBnClickedBtnImage();
-	afx_msg void OnBnClickedBtnSave();
-	afx_msg void OnBnClickedBtnLoad();
+	//afx_msg void OnBnClickedBtnSave();
+	//afx_msg void OnBnClickedBtnLoad();
 	void UpdateDisplay();
 	void moveRect(int nSttX, int nSttY, int nRadius);
 	void drawCircle(unsigned char* fm,int i,int j, int nRadius, int nGray);
 	bool isInCircle(int i, int j, int nCenterX, int nCenterY, int nRadius);
 	void saveFile(int nSttX);
-	void showFile(int nSttX, int nSttY, int move);
+	void showFile(int move);
+	void checkCenter();
 	afx_msg void OnBnClickedBtnAction();
 };

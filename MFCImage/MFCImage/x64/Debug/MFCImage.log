@@ -1,3 +1,3 @@
 ﻿  MFCImageDlg.cpp
 MFCImageDlg.obj : warning LNK4258: '/entry:WinMainCRTStartup' 지시문은 '/ENTRY:wWinMainCRTStartup' 스위치와 호환되지 않습니다. 무시됩니다.
-  MFCImage.vcxproj -> C:\Users\user\source\repos\MFCImage\x64\Debug\MFCImage.exe
+  MFCImage.vcxproj -> C:\Users\user\Documents\카카오톡 받은 파일\MFCImage\MFCImage\MFCImage\x64\Debug\MFCImage.exe
